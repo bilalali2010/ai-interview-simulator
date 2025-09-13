@@ -1,8 +1,5 @@
 # Environment
 venv/
-.env
-.env.local
-.env.production
 
 # Python
 __pycache__/
