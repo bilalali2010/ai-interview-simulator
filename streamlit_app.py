@@ -61,6 +61,10 @@ if 'current_question' not in st.session_state:
     st.session_state.current_question = ""
 if 'waiting_for_answer' not in st.session_state:
     st.session_state.waiting_for_answer = False
+if 'user_answers' not in st.session_state:
+    st.session_state.user_answers = {}
+if 'current_answer' not in st.session_state:
+    st.session_state.current_answer = ""
 
 # Interview questions database
 interview_questions = {
@@ -254,7 +258,12 @@ def get_next_question(category, user_answer=None):
             return follow_up
     
     # Return a random question from the selected category
-    return random.choice(interview_questions[category])
+    available_questions = [q for q in interview_questions[category] if q not in st.session_state.user_answers.values()]
+    if available_questions:
+        return random.choice(available_questions)
+    else:
+        # If all questions have been used, start over
+        return random.choice(interview_questions[category])
 
 # Function to handle interview process
 def conduct_interview(category, user_answer=None):
@@ -263,8 +272,12 @@ def conduct_interview(category, user_answer=None):
         st.session_state.question_count = 0
         st.session_state.scores = []
         st.session_state.conversation = []
+        st.session_state.user_answers = {}
     
     if user_answer:
+        # Store the answer for this specific question
+        st.session_state.user_answers[st.session_state.current_question] = user_answer
+        
         # Analyze the user's answer
         feedback, score = analyze_answer(st.session_state.current_question, user_answer)
         st.session_state.scores.append(score)
@@ -284,6 +297,7 @@ def conduct_interview(category, user_answer=None):
     st.session_state.conversation.append(("ai", f"Question {st.session_state.question_count + 1}: {next_question}"))
     st.session_state.question_count += 1
     st.session_state.waiting_for_answer = True
+    st.session_state.current_answer = ""  # Reset current answer
 
 # Sidebar for configuration
 with st.sidebar:
@@ -319,6 +333,8 @@ with st.sidebar:
         st.session_state.question_count = 0
         st.session_state.scores = []
         st.session_state.waiting_for_answer = False
+        st.session_state.user_answers = {}
+        st.session_state.current_answer = ""
         st.rerun()
 
 # Main content area
@@ -338,9 +354,13 @@ if not st.session_state.interview_started:
         conduct_interview(category)
         st.rerun()
 elif st.session_state.waiting_for_answer:
-    user_input = st.text_area("Type your answer here:", height=150, key="answer_input")
-    if st.button("Submit Answer"):
+    # Use a unique key for each question to prevent answer reuse
+    answer_key = f"answer_{st.session_state.question_count}"
+    user_input = st.text_area("Type your answer here:", height=150, key=answer_key, value=st.session_state.current_answer)
+    
+    if st.button("Submit Answer", key=f"submit_{st.session_state.question_count}"):
         if user_input:
+            st.session_state.current_answer = user_input
             st.session_state.waiting_for_answer = False
             conduct_interview(category, user_input)
             st.rerun()
