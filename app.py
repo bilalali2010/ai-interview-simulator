@@ -1,15 +1,16 @@
 import streamlit as st
 import random
 import re
-from transformers import pipeline, AutoTokenizer, AutoModelForSeq2SeqLM
 import numpy as np
 from datetime import datetime
-import requests
-from dotenv import load_dotenv
-import os
 
-# Load environment variables
-load_dotenv()
+# Try to import transformers with graceful fallback
+try:
+    from transformers import pipeline, AutoTokenizer, AutoModelForSeq2SeqLM
+    TRANSFORMERS_AVAILABLE = True
+except ImportError:
+    TRANSFORMERS_AVAILABLE = False
+    st.warning("Some advanced features may not be available due to missing dependencies.")
 
 # Page configuration
 st.set_page_config(
@@ -71,9 +72,12 @@ if 'current_question' not in st.session_state:
 if 'waiting_for_answer' not in st.session_state:
     st.session_state.waiting_for_answer = False
 
-# Initialize the free models (no API key needed)
+# Initialize models with graceful fallback
 @st.cache_resource
 def load_models():
+    if not TRANSFORMERS_AVAILABLE:
+        return None, None
+    
     try:
         # For question generation
         qa_generator = pipeline("text2text-generation", model="mrm8488/t5-base-finetuned-question-generation-ap")
@@ -82,7 +86,8 @@ def load_models():
     
     try:
         # For sentiment analysis of answers
-        sentiment_analyzer = pipeline("sentiment-analysis", model="cardiffnlp/twitter-roberta-base-sentiment-latest")
+        from transformers import pipeline as sentiment_pipeline
+        sentiment_analyzer = sentiment_pipeline("sentiment-analysis", model="cardiffnlp/twitter-roberta-base-sentiment-latest")
     except:
         sentiment_analyzer = None
     
@@ -134,8 +139,14 @@ improvement_feedback = [
 
 # Function to generate follow-up questions
 def generate_followup_question(answer, question_type):
-    if not qa_generator or not answer.strip():
-        return None
+    if not TRANSFORMERS_AVAILABLE or not qa_generator or not answer.strip():
+        # Fallback questions if generation fails
+        fallback_questions = {
+            "behavioral": "Can you tell me more about what you learned from that experience?",
+            "technical": "Could you elaborate on your technical approach to that problem?",
+            "general": "How did that experience prepare you for this role?"
+        }
+        return fallback_questions.get(question_type, "Can you tell me more about that?")
     
     try:
         # Create context from answer
@@ -204,7 +215,7 @@ def analyze_answer(question, answer):
         score += 3
     
     # Sentiment analysis if available
-    if sentiment_analyzer:
+    if TRANSFORMERS_AVAILABLE and sentiment_analyzer:
         try:
             sentiment = sentiment_analyzer(answer[:512])[0]
             if sentiment['label'] == 'positive':
@@ -351,6 +362,10 @@ with col2:
             st.line_chart(st.session_state.scores)
     else:
         st.info("Complete your first question to see performance metrics")
+
+# Show dependency status
+if not TRANSFORMERS_AVAILABLE:
+    st.sidebar.warning("Advanced AI features are disabled due to missing dependencies. The app will use simplified analysis.")
 
 # Footer
 st.markdown("---")
