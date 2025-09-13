@@ -1,10 +1,6 @@
 # AI Interview Simulator 🤖🎤
 
-A free, open-source AI interview simulator built with Streamlit. Practice your interview skills without any API keys or costs.
-
-## Important Note
-
-This app uses Hugging Face transformers which require significant resources. If deployment fails due to memory issues, the app will gracefully fall back to simplified analysis without the AI components.
+A lightweight, free interview simulator built with Streamlit. Practice your interview skills without any heavy dependencies or API keys.
 
 ## Features
 
@@ -12,7 +8,19 @@ This app uses Hugging Face transformers which require significant resources. If 
 - **Smart Feedback**: Get analysis on your answers with performance scoring
 - **Follow-up Questions**: Context-aware follow-up questions
 - **Streamlit Deployment**: Ready to deploy on Streamlit Cloud
-- **Graceful Fallbacks**: Works even if AI models can't load
+- **Lightweight**: No heavy dependencies - fast and reliable
+
+## Live Demo
+
+[View the live application on Streamlit](https://your-username-ai-interview-simulator.streamlit.app/)
+
+## How to Use
+
+1. Select a question category (Behavioral, Technical, or General)
+2. Click 'Start Interview' to begin
+3. Answer each question as you would in a real interview
+4. Receive immediate feedback and scores for your answers
+5. Complete all 5 questions to finish
 
 ## Deployment on Streamlit
 
